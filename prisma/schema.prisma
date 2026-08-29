@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  STAFF
+  ADMIN
+
+  @@map("Role")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EmployeeRole {
+  GROOMER
+  VET
+  RECEPTIONIST
+  MANAGER
+}
+
+enum NotificationType {
+  BOOKING_CREATED
+  BOOKING_CONFIRMED
+  BOOKING_IN_PROGRESS
+  BOOKING_COMPLETED
+  BOOKING_CANCELLED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  role          UserRole       @default(CUSTOMER)
+  pets          Pet[]
+  bookings      Booking[]
+  employee      Employee?
+  notifications Notification[]
+  reviews       Review[]
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+
+  @@index([role])
+  @@map("users")
+}
+
+model Pet {
+  id        String    @id @default(cuid())
+  userId    String
+  name      String
+  species   String
+  breed     String?
+  weight    Decimal   @db.Decimal(6, 2)
+  age       Int?
+  notes     String?
+  avatarUrl String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings  Booking[]
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("pets")
+}
+
+model Service {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  basePrice       Decimal   @db.Decimal(12, 2)
+  durationMinutes Int
+  category        String?
+  active          Boolean   @default(true)
+  bookings        Booking[]
+  reviews         Review[]
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([active])
+  @@index([category])
+  @@map("services")
+}
+
+model Employee {
+  id        String       @id @default(cuid())
+  name      String
+  role      EmployeeRole @default(GROOMER)
+  email     String?      @unique
+  phone     String?
+  active    Boolean      @default(true)
+  userId    String?      @unique
+  user      User?        @relation(fields: [userId], references: [id])
+  bookings  Booking[]
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@index([active])
+  @@index([role])
+  @@map("employees")
+}
+
+model Booking {
+  id            String                 @id @default(cuid())
+  userId        String
+  petId         String
+  serviceId     String
+  employeeId    String
+  startTime     DateTime               @db.Timestamptz(3)
+  endTime       DateTime               @db.Timestamptz(3)
+  totalPrice    Decimal                @db.Decimal(12, 2)
+  status        BookingStatus          @default(PENDING)
+  notes         String?
+  cancelReason  String?
+  user          User                   @relation(fields: [userId], references: [id])
+  pet           Pet                    @relation(fields: [petId], references: [id])
+  service       Service                @relation(fields: [serviceId], references: [id])
+  employee      Employee               @relation(fields: [employeeId], references: [id])
+  statusHistory BookingStatusHistory[]
+  review        Review?
+  createdAt     DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime               @updatedAt @db.Timestamptz(3)
+
+  @@index([employeeId])
+  @@index([employeeId, startTime, endTime])
+  @@index([endTime])
+  @@index([petId])
+  @@index([startTime])
+  @@index([status])
+  @@index([userId])
+  @@map("bookings")
+}
+
+/// Audit trail of every booking status transition — written by the booking service, never edited directly.
+model BookingStatusHistory {
+  id              String         @id @default(cuid())
+  bookingId       String
+  fromStatus      BookingStatus?
+  toStatus        BookingStatus
+  changedByUserId String?
+  note            String?
+  booking         Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now()) @db.Timestamptz(3)
+
+  @@index([bookingId])
+  @@map("booking_status_history")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  bookingId String?
+  read      Boolean          @default(false)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+
+  @@index([bookingId])
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+/// Check constraint (rating 1-5) lives at the DB level via migration SQL, not enforced here.
+model Review {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  userId    String
+  serviceId String
+  rating    Int
+  comment   String?
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+  service   Service  @relation(fields: [serviceId], references: [id])
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([serviceId])
+  @@index([userId])
+  @@map("reviews")
+}

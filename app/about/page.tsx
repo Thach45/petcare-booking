@@ -1,0 +1,13 @@
+import Link from "next/link";
+import Image from "next/image";
+import { PageCta, PublicPage } from "@/components/public-page";
+
+const veterinaryRoles = [
+  { role: "Bác sĩ thú y điều trị", focus: "Khám tổng quát · nội khoa · theo dõi sức khoẻ", requirement: "Cập nhật họ tên, số chứng chỉ hành nghề và kinh nghiệm thực tế.", image: "/vet-doctor-01.png" },
+  { role: "Bác sĩ thú y phòng ngừa", focus: "Tiêm phòng · kiểm soát ký sinh · tư vấn lịch chăm sóc", requirement: "Cập nhật hồ sơ chuyên môn trước khi công khai.", image: "/vet-doctor-02.png" },
+  { role: "Kỹ thuật viên chăm sóc", focus: "Grooming · vệ sinh · theo dõi tình trạng của bé", requirement: "Cập nhật chứng nhận đào tạo và phạm vi phụ trách.", image: "/vet-technician-01.png" },
+];
+
+export default function AboutPage() {
+  return <PublicPage eyebrow="Về PetCare" title="Một nơi để bé được là chính mình" copy="PetCare được xây dựng từ niềm tin giản dị: mỗi thú cưng đều xứng đáng nhận sự quan tâm chuyên nghiệp, nhẹ nhàng và thật lòng."><section className="content-section about-grid"><div className="about-copy"><p className="eyebrow">Câu chuyện của chúng tôi</p><h2>Không chỉ là một buổi hẹn, mà là một mối quan hệ dài lâu.</h2><p>Chúng tôi lắng nghe từ thói quen nhỏ nhất của bé để tạo nên trải nghiệm an toàn, thoải mái và phù hợp với từng cá thể.</p><Link href="/booking" className="outline-button">Gặp đội ngũ PetCare <span>→</span></Link></div><div className="about-image"><span className="about-blob" /><Image src="/petcare-hero.png" alt="Chú chó và mèo con tại PetCare" width={1024} height={1536} /></div></section><section className="numbers-section"><article><strong>4.9/5</strong><span>Điểm hài lòng từ khách hàng</span></article><article><strong>3.500+</strong><span>Buổi hẹn được chăm sóc</span></article><article><strong>24/7</strong><span>Hỗ trợ khi bạn cần</span></article></section><section className="veterinary-section"><div className="veterinary-heading"><p className="eyebrow">Đội ngũ chuyên môn</p><h2>Thông tin bác sĩ thú y</h2><p>Công khai chuyên môn và thông tin xác thực giúp chủ nuôi an tâm trước mỗi buổi hẹn.</p></div><div className="veterinary-grid">{veterinaryRoles.map((member) => <article key={member.role}><Image src={member.image} alt={`Chân dung minh hoạ ${member.role}`} width={1024} height={1536} className="veterinary-portrait" /><div className="veterinary-copy"><h3>{member.role}</h3><p>{member.focus}</p><small>{member.requirement}</small></div></article>)}</div></section><PageCta title="Hãy để chúng tôi chăm sóc bé thật chu đáo." copy="Chọn thời gian phù hợp, PetCare sẽ sẵn sàng chào đón cả hai bạn." /></PublicPage>;
+}
