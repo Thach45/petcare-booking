@@ -16,6 +16,31 @@ function formatDateTime(value: string) { return new Intl.DateTimeFormat("vi-VN",
 function formatMoney(value: string) { return `${new Intl.NumberFormat("vi-VN").format(Number(value))}đ`; }
 function starDisplay(rating: number) { return STARS.map((n) => (n <= rating ? "★" : "☆")).join(""); }
 
+function weightTier(weight: number) {
+  if (weight < 5) return { label: "Miễn phụ thu", tone: "free" };
+  if (weight < 15) return { label: "+50.000đ phụ thu", tone: "medium" };
+  return { label: "+100.000đ phụ thu", tone: "large" };
+}
+
+function PawIcon() {
+  return <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14.5c-2.8 0-5 2.1-5 4.5 0 1.5 1.2 2 2.5 1.5.9-.4 1.7-.4 2.5 0 1.3.5 2.5 0 2.5-1.5 0-2.4-2.2-4.5-5-4.5Z" /><ellipse cx="6.5" cy="10" rx="2" ry="2.7" /><ellipse cx="17.5" cy="10" rx="2" ry="2.7" /><ellipse cx="10" cy="6" rx="2" ry="2.7" /><ellipse cx="14" cy="6" rx="2" ry="2.7" /></svg>;
+}
+
+function PetCard({ pet }: { pet: Pet }) {
+  const tier = weightTier(Number(pet.weight));
+  return <article className="pet-card">
+    <span className={`pet-card-icon tone-${tier.tone}`}><PawIcon /></span>
+    <div className="pet-card-body">
+      <strong>{pet.name}</strong>
+      <span className="pet-card-meta">{pet.species}{pet.breed ? ` · ${pet.breed}` : ""}{pet.age != null ? ` · ${pet.age} tuổi` : ""}</span>
+    </div>
+    <div className="pet-card-weight">
+      <b>{pet.weight}kg</b>
+      <em className={`tone-${tier.tone}`}>{tier.label}</em>
+    </div>
+  </article>;
+}
+
 function ReviewCell({ booking, onSubmitted }: { booking: Booking; onSubmitted: () => void }) {
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(5);
@@ -126,7 +151,7 @@ export default function AccountPage() {
 
       <section className="booking-form-page">
         <div className="form-heading"><p className="eyebrow">Thú cưng của bạn</p><h2>{loadingData ? "Đang tải..." : `${pets.length} thú cưng`}</h2></div>
-        {pets.length > 0 && <div className="admin-staff-grid" style={{ marginBottom: 24 }}>{pets.map((pet) => <article className="admin-staff-card" key={pet.id}><span>{pet.name.slice(0, 1)}</span><div><strong>{pet.name}</strong><p>{pet.species}{pet.breed ? ` · ${pet.breed}` : ""} · {pet.weight}kg</p></div></article>)}</div>}
+        {pets.length > 0 ? <div className="pet-grid">{pets.map((pet) => <PetCard key={pet.id} pet={pet} />)}</div> : !loadingData && <div className="admin-empty" style={{ marginBottom: 24 }}><strong>Bạn chưa có thú cưng nào.</strong><span>Thêm thú cưng ở form bên dưới để bắt đầu đặt lịch.</span></div>}
 
         <form onSubmit={addPet} className="dialog-form">
           <label>Tên thú cưng<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Ví dụ: Milo" /></label>

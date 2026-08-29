@@ -14,6 +14,16 @@ function todayISODate() { return new Date().toISOString().slice(0, 10); }
 
 function formatSlotTime(iso: string) { return new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso)); }
 
+const PERIODS = [
+  { key: "morning", label: "Buổi sáng", test: (hour: number) => hour < 12 },
+  { key: "afternoon", label: "Buổi chiều", test: (hour: number) => hour >= 12 && hour < 18 },
+  { key: "evening", label: "Buổi tối", test: (hour: number) => hour >= 18 },
+];
+
+function groupSlotsByPeriod(slots: Slot[]) {
+  return PERIODS.map((period) => ({ ...period, slots: slots.filter((slot) => period.test(new Date(slot.startTime).getHours())) })).filter((group) => group.slots.length > 0);
+}
+
 function BookingForm() {
   const router = useRouter();
   const query = useSearchParams();
@@ -94,6 +104,7 @@ function BookingForm() {
   }, [serviceId, employeeId, date]);
 
   const selectedService = useMemo(() => services.find((service) => service.id === serviceId), [services, serviceId]);
+  const slotGroups = useMemo(() => groupSlotsByPeriod(slots), [slots]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -142,7 +153,8 @@ function BookingForm() {
       <label>Ngày hẹn<input required type="date" min={todayISODate()} value={date} onChange={(event) => setDate(event.target.value)} /></label>
       <fieldset>
         <legend>Chọn khung giờ còn trống{selectedService ? ` (${selectedService.durationMinutes} phút)` : ""}</legend>
-        {loadingSlots ? <p>Đang tải khung giờ...</p> : slots.length ? <div className="slot-grid">{slots.map((slot) => <button type="button" key={slot.startTime} className={selectedSlot?.startTime === slot.startTime ? "slot active" : "slot"} onClick={() => setSelectedSlot(slot)}>{formatSlotTime(slot.startTime)}</button>)}</div> : <p>Không còn khung giờ trống cho lựa chọn này, vui lòng đổi ngày hoặc nhân viên khác.</p>}
+        {selectedSlot && <p className="slot-selected-hint">Đã chọn <b>{formatSlotTime(selectedSlot.startTime)}</b></p>}
+        {loadingSlots ? <p>Đang tải khung giờ...</p> : slotGroups.length ? <div className="slot-scroll">{slotGroups.map((group) => <div className="slot-period" key={group.key}><p className="slot-period-label">{group.label}</p><div className="slot-grid">{group.slots.map((slot) => <button type="button" key={slot.startTime} className={selectedSlot?.startTime === slot.startTime ? "slot active" : "slot"} onClick={() => setSelectedSlot(slot)}>{formatSlotTime(slot.startTime)}</button>)}</div></div>)}</div> : <p>Không còn khung giờ trống cho lựa chọn này, vui lòng đổi ngày hoặc nhân viên khác.</p>}
       </fieldset>
       <label className="note-field">Ghi chú cho PetCare<textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Ví dụ: bé nhạy cảm với tiếng máy sấy..." rows={3} /></label>
       {submitError && <p className="form-error" role="alert">{submitError}</p>}
