@@ -1,41 +1,118 @@
-# Pet Care & Grooming Booking
+<div align="center">
 
-Next.js 14 App Router, TypeScript, Prisma và PostgreSQL cho đặt lịch chăm sóc thú cưng — bao gồm cả API và UI.
+# 🐾 PetCare
 
-## Khởi chạy
+**Nền tảng đặt lịch chăm sóc & grooming thú cưng** — full-stack, production-minded, không có khung giờ nào bị đặt trùng.
 
-1. Sao chép `.env.example` thành `.env` và thay `DATABASE_URL`, `JWT_SECRET`.
-2. Cài dependencies: `npm install`.
-3. Sinh Prisma client và tạo database: `npx prisma migrate dev --name init`.
-4. Nạp dữ liệu mẫu: `npm run prisma:seed`.
-5. Chạy: `npm run dev`.
+![Next.js](https://img.shields.io/badge/Next.js_14-000000?style=flat-square&logo=next.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Vitest](https://img.shields.io/badge/tested_with-Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)
 
-Tài khoản quản trị mẫu: `admin@petcare.local`. Xem mật khẩu in ra console khi chạy `npm run prisma:seed` (không hard-code trong repo). Chỉ dùng trong môi trường phát triển — không chạy seed nhắm vào DB staging/production.
+<img src="public/petcare-hero.png" alt="PetCare" width="420" />
 
-## Trạng thái UI (cập nhật 29/08/2026)
+</div>
 
-Đã nối API thật: đăng ký/đăng nhập, đặt lịch (`/booking`, chọn thú cưng/dịch vụ/nhân viên/khung giờ trống thật), quản lý thú cưng và xem lịch hẹn của khách (`/account`), xử lý trạng thái booking + CRUD dịch vụ/nhân sự từ trang admin (`/admin/*`), `/pricing` và `/services` lấy dữ liệu thật từ `GET /api/services`, thông báo trong header (chuông) và đánh giá dịch vụ sau khi hoàn tất lịch hẹn.
+---
 
-Còn chưa làm (ngoài phạm vi hiện tại):
-- Chưa có UI hiển thị đánh giá công khai (trung bình sao theo dịch vụ) trên `/services`/`/pricing` — API `GET /api/reviews?serviceId=` đã trả sẵn `averageRating`.
+## Vì sao dự án này đáng xem
+
+Đa số app "đặt lịch demo" chỉ đẹp trên giao diện — bấm nút là ăn ngay animation "thành công", còn đằng sau chẳng có gì. PetCare thì ngược lại: **UI và API nối thật với nhau, dữ liệu đi hết vào PostgreSQL**, và phần khó nhất của bài toán đặt lịch — hai người cùng bấm giữ một khung giờ — được xử lý đúng ở tầng transaction, không phải bằng `disabled` trên nút bấm.
+
+## Tính năng
+
+| | |
+|---|---|
+| 🔐 **Xác thực** | Đăng ký/đăng nhập bằng JWT httpOnly cookie, phân quyền `CUSTOMER` / `STAFF` / `ADMIN` |
+| 🐶 **Quản lý thú cưng** | Khách tự thêm/sửa thú cưng, cân nặng dùng để tính phụ thu tự động |
+| 📅 **Đặt lịch real-time** | Chọn dịch vụ + nhân viên + ngày → chỉ hiện khung giờ **thực sự còn trống**, tính theo giờ làm việc 08:00–20:00 |
+| 🔒 **Chống double-booking** | Advisory lock + transaction `Serializable` + exclusion constraint ở DB — hai request cạnh tranh, chỉ một thắng |
+| 🛠️ **Trang quản trị** | Xác nhận/hủy lịch, CRUD dịch vụ & nhân sự, theo dõi audit trail từng lần đổi trạng thái |
+| 🔔 **Thông báo** | Mỗi lần lịch được tạo/xác nhận/hoàn tất, khách nhận thông báo ngay trong chuông ở header |
+| ⭐ **Đánh giá** | Chỉ đánh giá được sau khi lịch hẹn hoàn tất, mỗi lịch một đánh giá (ràng buộc unique ở DB) |
+| 💰 **Giá minh bạch** | Giá luôn tính ở server từ `basePrice` + phụ thu cân nặng — client không thể tự gửi giá |
+
+## Công nghệ
+
+| Layer | Lựa chọn |
+|---|---|
+| Framework | Next.js 14 (App Router), React 18 |
+| Ngôn ngữ | TypeScript (strict mode) |
+| Database | PostgreSQL + Prisma ORM |
+| Xác thực | JWT (`jose`) + `bcryptjs`, httpOnly cookie |
+| Validate | Zod trên mọi input API |
+| Thời gian | Luxon, xử lý timezone `Asia/Ho_Chi_Minh` |
+| Test | Vitest — unit test business logic + integration test race-condition trên DB thật |
+
+## Bắt đầu
+
+```bash
+git clone https://github.com/Thach45/petcare-booking.git
+cd petcare-booking
+npm install
+cp .env.example .env   # điền DATABASE_URL, JWT_SECRET
+npx prisma migrate deploy
+npm run prisma:seed
+npm run dev
+```
+
+Mở [http://localhost:3000](http://localhost:3000). Tài khoản mẫu (chỉ dùng ở local):
+
+| Vai trò | Email | Mật khẩu |
+|---|---|---|
+| Admin | `admin@petcare.local` | in ra console khi chạy `npm run prisma:seed` |
+| Khách | `customer@petcare.local` | như trên |
+
+> Seed script cố tình không hard-code mật khẩu vào repo, và không được chạy nhắm vào DB staging/production.
+
+## Chạy test
+
+```bash
+npm test
+```
+
+23 test, gồm cả một test **bắn hai request `createBooking` song song vào cùng một khung giờ** để chứng minh cơ chế chống double-booking hoạt động thật, không chỉ đọc code là tin.
+
+## Cấu trúc thư mục
+
+```
+app/
+  api/          → route handlers (REST-ish, JSON, xác thực qua cookie)
+  actions/      → server actions dùng cho form trong App Router
+  admin/        → trang quản trị (bookings, services, staff)
+  account/      → trang khách hàng (pet, lịch hẹn, đánh giá)
+services/       → business logic thuần (pricing, availability, booking, notification, review)
+validators/     → schema Zod, dùng chung giữa route API và server action
+prisma/         → schema.prisma + migration SQL thật (kèm check/exclusion constraint)
+tests/          → unit + integration test cho services/
+```
 
 ## API chính
 
-- `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
-- `GET|POST /api/pets`, `GET|PATCH /api/pets/:id`
-- `GET|POST /api/services`, `PATCH /api/services/:id` (ghi yêu cầu ADMIN)
-- `GET|POST /api/employees`, `PATCH /api/employees/:id` (ghi yêu cầu ADMIN)
-- `GET /api/availability?employeeId=&serviceId=&date=YYYY-MM-DD`
-- `GET|POST /api/bookings`, `PATCH /api/bookings/:id/status`
-- `GET /api/notifications`, `PATCH /api/notifications` (đánh dấu tất cả đã đọc), `PATCH /api/notifications/:id`
-- `GET /api/reviews?serviceId=`, `POST /api/reviews` (chỉ cho booking `COMPLETED` của chính mình, mỗi booking 1 đánh giá)
+| Method | Endpoint | Ghi chú |
+|---|---|---|
+| `POST` | `/api/auth/register`, `/api/auth/login` | trả JWT qua httpOnly cookie |
+| `GET` | `/api/auth/me` | thông tin session hiện tại |
+| `GET/POST` | `/api/pets` | `PATCH /api/pets/:id` để sửa |
+| `GET/POST` | `/api/services` | ghi yêu cầu `ADMIN` |
+| `GET/POST` | `/api/employees` | ghi yêu cầu `ADMIN` |
+| `GET` | `/api/availability?employeeId=&serviceId=&date=` | slot trống thật, không cache |
+| `GET/POST` | `/api/bookings` | `PATCH /api/bookings/:id/status` để đổi trạng thái |
+| `GET/PATCH` | `/api/notifications` | `PATCH /api/notifications/:id` đánh dấu đã đọc |
+| `GET/POST` | `/api/reviews?serviceId=` | trả kèm `averageRating` |
 
-Danh sách hỗ trợ `page`, `pageSize` (tối đa 100) và các filter phù hợp (`search`, `species`, `status`, `employeeId`, `from`, `to`). API xác thực bằng HTTP-only JWT cookie.
+Danh sách hỗ trợ `page`, `pageSize` (tối đa 100) và filter (`search`, `status`, `employeeId`, `from`, `to`...).
 
-## Notifications & Reviews
+## Điểm kỹ thuật đáng nói
 
-Mỗi lần tạo booking hoặc đổi trạng thái, hệ thống ghi một `Notification` cho khách hàng trong cùng transaction (bảng `notifications`) — hiển thị qua chuông thông báo ở header, tự làm mới mỗi 30s. Mọi thay đổi trạng thái booking cũng được ghi vào `booking_status_history` để làm audit trail. Khách hàng chỉ có thể đánh giá (`reviews`) sau khi booking đã `COMPLETED`, và chỉ một đánh giá cho mỗi booking (ràng buộc unique ở DB).
+**Chống double-booking, ba lớp:**
+1. `pg_advisory_xact_lock` khóa theo `employeeId + ngày` trong transaction — request thứ hai phải đợi request đầu commit/rollback.
+2. Transaction chạy ở isolation level `Serializable`, tự phát hiện xung đột đọc/ghi mà lock không bắt hết.
+3. **Exclusion constraint** ở tầng PostgreSQL (`EXCLUDE USING gist`) — lớp bảo vệ cuối cùng, hoạt động bất kể ai/ứng dụng nào ghi vào bảng `bookings`, kể cả một script chạy tay bỏ qua toàn bộ code Node.
 
-## Quy tắc dữ liệu quan trọng
+**Audit trail thật:** mọi lần tạo/đổi trạng thái booking được ghi vào `booking_status_history` trong cùng transaction — không phải log riêng, không thể lệch với dữ liệu chính.
 
-Giá luôn được tính trong server từ `Service.basePrice` và `Pet.weight`; client không thể gửi giá. Mọi lượt tạo booking chạy transaction Serializable và PostgreSQL transaction advisory lock theo `employeeId + ngày làm việc`, sau đó kiểm tra khoảng thời gian chồng lấn. Vì vậy hai request cạnh tranh không thể cùng chiếm một slot. Booking `CANCELLED` được loại khỏi cả kiểm tra xung đột lẫn kết quả slot trống.
+## Còn thiếu (biết rõ, chưa làm)
+
+- Chưa hiển thị điểm đánh giá trung bình công khai trên `/services`/`/pricing` — API `GET /api/reviews?serviceId=` đã trả sẵn `averageRating`, chỉ chưa lên UI.
